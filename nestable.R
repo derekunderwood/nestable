@@ -28,13 +28,13 @@ node <- function(name, ..., .values = list()) {
 #     name_col   — column name to use as the node label
 #     value_cols — character vector of column names to carry as .values
 #
-#   nodes_grouped_by(df, nodes, group_col)
-#     Wraps a parallel list of nodes into parent nodes, one per unique value
-#     in group_col. Row order within each group is preserved.
-#
-#   df_to_tree(df, name_col, value_cols, group_col = NULL)
-#     Full pipeline: rows_to_nodes() then optionally nodes_grouped_by().
-#     Returns a list of top-level nodes suitable for data_root.
+#   df_to_tree(df, name_col, value_cols, group_col = NULL, total = NULL)
+#     Converts a flat data.frame into a nested list of nodes.
+#     group_col — character vector of grouping columns, outermost first.
+#                 Each level becomes a parent node wrapping the next.
+#                 NULL produces a flat list of leaf nodes.
+#     total     — if a string, wraps the entire tree in a single root node
+#                 with that label (grand total row); NULL for no total.
 # =============================================================================
 
 rows_to_nodes <- function(df, name_col, value_cols) {
@@ -45,36 +45,42 @@ rows_to_nodes <- function(df, name_col, value_cols) {
   })
 }
 
-nodes_grouped_by <- function(df, nodes, group_col) {
-  groups <- unique(df[[group_col]])
-  lapply(groups, function(g) {
-    idx <- which(df[[group_col]] == g)
-    do.call(node, c(list(name = g), nodes[idx]))
-  })
-}
-
-df_to_tree <- function(df, name_col, value_cols, group_col = NULL) {
-  leaves <- rows_to_nodes(df, name_col, value_cols)
-  if (is.null(group_col)) leaves else nodes_grouped_by(df, leaves, group_col)
+df_to_tree <- function(df, name_col, value_cols, group_col = NULL, total = NULL) {
+  result <- if (is.null(group_col) || length(group_col) == 0) {
+    rows_to_nodes(df, name_col, value_cols)
+  } else {
+    g      <- group_col[1]
+    rest   <- if (length(group_col) > 1) group_col[-1] else NULL
+    groups <- unique(df[[g]])
+    lapply(groups, function(grp) {
+      sub <- df[df[[g]] == grp, , drop = FALSE]
+      do.call(node, c(list(name = grp),
+                      df_to_tree(sub, name_col, value_cols, rest)))
+    })
+  }
+  if (!is.null(total)) list(do.call(node, c(list(name = total), result))) else result
 }
 
 # --- Sample data: Magnificent 7 S&P 500 stocks ------------------------------
 # Simulates a data.frame as it would arrive from a database query.
-# market_cap in $B; performance is YTD % return.
+# market_cap in $B; ytd_return is YTD % return.
 
 mag7 <- data.frame(
-  ticker      = c("AAPL",        "MSFT",        "NVDA",   "GOOGL",            "META",             "AMZN",                "TSLA"),
-  name        = c("Apple",       "Microsoft",   "Nvidia", "Alphabet",         "Meta",             "Amazon",              "Tesla"),
-  sector      = c("Technology",  "Technology",  "Technology", "Comm. Services", "Comm. Services", "Cons. Discretionary", "Cons. Discretionary"),
-  market_cap  = c(3270,          2990,          2640,     1870,               1480,               2180,                  790),
-  ytd_return  = c(-11.8,         -8.3,          22.1,     4.6,                17.2,               2.9,                  -33.4),
+  name       = c("Apple",      "Microsoft", "Nvidia",        "Alphabet",       "Meta",           "Amazon",              "Tesla"),
+  sector     = c("Technology", "Technology","Technology",     "Comm. Services", "Comm. Services", "Cons. Discretionary", "Cons. Discretionary"),
+  subsector  = c("Hardware",   "Software",  "Semiconductors", "Search & Ads",   "Social Media",   "E-Commerce",          "EV & Auto"),
+  market_cap = c(3270,         2990,        2640,             1870,             1480,             2180,                  790),
+  ytd_return = c(-11.8,        -8.3,        22.1,             4.6,              17.2,             2.9,                  -33.4),
   stringsAsFactors = FALSE
 )
 
+# group_col is applied outermost-first: sector > subsector > name
+# total = "Mag 7" adds an optional grand-total root row; set to NULL to remove
 data_root <- df_to_tree(mag7,
   name_col   = "name",
   value_cols = c("market_cap", "ytd_return"),
-  group_col  = "sector"
+  group_col  = c("sector", "subsector"),
+  total      = "Mag 7"
 )
 
 # --- Column definitions -----------------------------------------------------
