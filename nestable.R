@@ -20,31 +20,61 @@ node <- function(name, ..., .values = list()) {
   list(name = name, values = as.list(.values), children = list(...))
 }
 
-# --- Sample data ------------------------------------------------------------
+# =============================================================================
+# 2. DATA HELPERS — convert flat data.frames into node trees
+#
+#   rows_to_nodes(df, name_col, value_cols)
+#     Converts each row of df into a leaf node.
+#     name_col   — column name to use as the node label
+#     value_cols — character vector of column names to carry as .values
+#
+#   nodes_grouped_by(df, nodes, group_col)
+#     Wraps a parallel list of nodes into parent nodes, one per unique value
+#     in group_col. Row order within each group is preserved.
+#
+#   df_to_tree(df, name_col, value_cols, group_col = NULL)
+#     Full pipeline: rows_to_nodes() then optionally nodes_grouped_by().
+#     Returns a list of top-level nodes suitable for data_root.
+# =============================================================================
 
-data_root <- list(
+rows_to_nodes <- function(df, name_col, value_cols) {
+  lapply(seq_len(nrow(df)), function(i) {
+    row    <- df[i, , drop = FALSE]
+    values <- as.list(row[, value_cols, drop = FALSE])
+    node(as.character(row[[name_col]]), .values = values)
+  })
+}
 
-  node("Equity",
-    node("US Equity",
-      node("Large Cap Growth", .values = list(market_value = 450000, performance =  12.4)),
-      node("Large Cap Value",  .values = list(market_value = 380000, performance =   8.1))
-    ),
-    node("International",
-      node("Developed Markets", .values = list(market_value = 310000, performance =   6.3)),
-      node("Emerging Markets",  .values = list(market_value = 180000, performance =  -2.7))
-    )
-  ),
+nodes_grouped_by <- function(df, nodes, group_col) {
+  groups <- unique(df[[group_col]])
+  lapply(groups, function(g) {
+    idx <- which(df[[group_col]] == g)
+    do.call(node, c(list(name = g), nodes[idx]))
+  })
+}
 
-  node("Fixed Income",
-    node("Investment Grade",
-      node("US Treasuries",   .values = list(market_value = 220000, performance =  3.2)),
-      node("Corporate Bonds", .values = list(market_value = 195000, performance =  4.8))
-    ),
-    node("High Yield", .values = list(market_value =  90000, performance = -1.5))
-  ),
+df_to_tree <- function(df, name_col, value_cols, group_col = NULL) {
+  leaves <- rows_to_nodes(df, name_col, value_cols)
+  if (is.null(group_col)) leaves else nodes_grouped_by(df, leaves, group_col)
+}
 
-  node("Alternatives", .values = list(market_value = 160000, performance = 9.2))
+# --- Sample data: Magnificent 7 S&P 500 stocks ------------------------------
+# Simulates a data.frame as it would arrive from a database query.
+# market_cap in $B; performance is YTD % return.
 
+mag7 <- data.frame(
+  ticker      = c("AAPL",        "MSFT",        "NVDA",   "GOOGL",            "META",             "AMZN",                "TSLA"),
+  name        = c("Apple",       "Microsoft",   "Nvidia", "Alphabet",         "Meta",             "Amazon",              "Tesla"),
+  sector      = c("Technology",  "Technology",  "Technology", "Comm. Services", "Comm. Services", "Cons. Discretionary", "Cons. Discretionary"),
+  market_cap  = c(3270,          2990,          2640,     1870,               1480,               2180,                  790),
+  ytd_return  = c(-11.8,         -8.3,          22.1,     4.6,                17.2,               2.9,                  -33.4),
+  stringsAsFactors = FALSE
+)
+
+data_root <- df_to_tree(mag7,
+  name_col   = "name",
+  value_cols = c("market_cap", "ytd_return"),
+  group_col  = "sector"
 )
 
 # --- Column definitions -----------------------------------------------------
@@ -58,7 +88,7 @@ data_root <- list(
 #               child_values = list of full value lists for direct children
 #                              (useful for weighted aggregation)
 
-fmt_usd <- function(x) paste0("$", formatC(x, format = "f", digits = 2, big.mark = ","))
+fmt_usd <- function(x) paste0("$", formatC(x, format = "f", digits = 1, big.mark = ","), "B")
 
 fmt_pct <- function(x) {
   s <- if (x >= 0) "+" else ""
@@ -67,19 +97,19 @@ fmt_pct <- function(x) {
 
 columns <- list(
   list(
-    header    = "Market Value",
-    key       = "market_value",
+    header    = "Market Cap",
+    key       = "market_cap",
     format_fn = fmt_usd,
     color_fn  = NULL,
     rollup_fn = function(vals, child_values) sum(vals)
   ),
   list(
-    header    = "Performance",
-    key       = "performance",
+    header    = "YTD Return",
+    key       = "ytd_return",
     format_fn = fmt_pct,
     color_fn  = function(x) if (x >= 0) "#2e7d32" else "#c62828",
     rollup_fn = function(vals, child_values) {
-      weights <- sapply(child_values, function(v) v[["market_value"]])
+      weights <- sapply(child_values, function(v) v[["market_cap"]])
       total_w <- sum(weights)
       if (total_w == 0) 0 else sum(vals * weights) / total_w
     }
@@ -90,7 +120,7 @@ columns <- list(
 # Override any of these values to restyle the table without touching the logic.
 
 theme <- list(
-  title         = "Holdings",
+  title         = "Magnificent 7",
   font_family   = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   font_size     = "14px",
   page_bg       = "#f5f5f5",
