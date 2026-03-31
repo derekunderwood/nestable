@@ -146,8 +146,9 @@ assign_ids <- function(node, env = new.env(parent = emptyenv())) {
 }
 
 build_tree <- function(roots, cols) {
-  roots <- lapply(roots, rollup, cols = cols)
-  roots <- lapply(roots, assign_ids)
+  roots  <- lapply(roots, rollup, cols = cols)
+  id_env <- new.env(parent = emptyenv())
+  roots  <- lapply(roots, assign_ids, env = id_env)
   roots
 }
 
