@@ -1,3 +1,19 @@
+# Internal: accept a character vector as a shorthand column spec.
+#   c("market_cap", "ytd_return")          → auto-derived headers
+#   c("Market Cap" = "market_cap", ...)    → explicit headers
+# A list of col_def() objects is passed through unchanged.
+normalise_columns <- function(columns) {
+  if (is.character(columns)) {
+    nms <- names(columns)
+    return(lapply(seq_along(columns), function(i) {
+      key <- columns[[i]]
+      hdr <- if (!is.null(nms) && nzchar(nms[[i]])) nms[[i]] else NULL
+      col_def(key, header = hdr)
+    }))
+  }
+  columns
+}
+
 # Random UID safe for HTML id attributes (must not start with a digit).
 new_widget_uid <- function() {
   paste0("w", paste0(sample(c(letters, 0:9), 7L, replace = TRUE), collapse = ""))
@@ -77,7 +93,17 @@ render_rows <- function(nodes, cols, depth, parent_id, indent_px) {
 #'
 #' @param data_root A list of top-level [node()] objects. Build with [node()],
 #'   [rows_to_nodes()], or [df_to_tree()].
-#' @param columns A list of column definitions from [col_def()].
+#' @param columns Column specification. Three forms are accepted:
+#'   \itemize{
+#'     \item A character vector of key names:
+#'           `c("market_cap", "ytd_return")` — headers are auto-derived
+#'           from the key (e.g. `"market_cap"` → `"Market Cap"`).
+#'     \item A *named* character vector:
+#'           `c("Market Cap" = "market_cap", "YTD Return" = "ytd_return")` —
+#'           explicit headers, default formatting and rollup.
+#'     \item A list of [col_def()] objects for full control over formatting,
+#'           colours, and rollup behaviour.
+#'   }
 #' @param theme A theme list from [nestable_theme()].
 #' @param uid Character. Widget UID prefix for HTML element `id` attributes.
 #'   Defaults to a random string so multiple tables on one page never clash.
@@ -91,6 +117,7 @@ nestable <- function(data_root,
                      theme = nestable_theme(),
                      uid   = new_widget_uid()) {
 
+  columns <- normalise_columns(columns)
   tree <- build_tree(data_root, columns, prefix = paste0(uid, "-"))
 
   css_vars <- paste(

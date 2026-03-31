@@ -34,20 +34,23 @@ data_root <- df_to_tree(mag7,
 # ---------------------------------------------------------------------------
 # 2. Column definitions
 # ---------------------------------------------------------------------------
+# Simple form: named character vector (like kable's col.names).
+# Headers come from the names; default format and rollup are applied.
+#
+#   columns <- c("Market Cap" = "market_cap", "YTD Return" = "ytd_return")
+#
+# Full form: list of col_def() for custom formatting, colours, and rollup.
 
 columns <- list(
-  col_def(
-    header    = "Market Cap",
-    key       = "market_cap",
-    format_fn = fmt_currency("$", "B", digits = 1L),
-    rollup_fn = function(vals, child_values) sum(vals, na.rm = TRUE)
+  col_def("market_cap",
+    header = "Market Cap",
+    format = fmt_currency("$", "B", digits = 1L)
   ),
-  col_def(
-    header    = "YTD Return",
-    key       = "ytd_return",
-    format_fn = fmt_percent(digits = 2L),
-    color_fn  = function(x) if (x >= 0) "#2e7d32" else "#c62828",
-    rollup_fn = weighted_rollup("market_cap")
+  col_def("ytd_return",
+    header = "YTD Return",
+    format = fmt_percent(digits = 2L),
+    color  = function(x) if (x >= 0) "#2e7d32" else "#c62828",
+    rollup = weighted_rollup("market_cap")
   )
 )
 

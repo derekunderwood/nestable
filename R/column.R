@@ -1,27 +1,49 @@
+# Internal: turn an underscore_key into a Title Case label.
+pretty_header <- function(key) {
+  words <- strsplit(key, "[_. ]+")[[1]]
+  paste(paste0(toupper(substr(words, 1, 1)), substr(words, 2, nchar(words))),
+        collapse = " ")
+}
+
+# Internal: resolve "sum" / "mean" shortcut strings to rollup functions.
+resolve_rollup <- function(rollup) {
+  if (is.function(rollup)) return(rollup)
+  switch(rollup,
+    sum  = function(vals, child_values) sum(vals,  na.rm = TRUE),
+    mean = function(vals, child_values) mean(vals, na.rm = TRUE),
+    stop("Unknown rollup shortcut '", rollup,
+         "'. Use \"sum\", \"mean\", or a function.", call. = FALSE)
+  )
+}
+
 #' Define a table column
 #'
-#' @param header Character. Column header text.
-#' @param key Character. The name of the field in each node's `.values` list.
-#' @param format_fn Function `function(x) -> character` for display formatting.
+#' @param key Character. The value key — the column name in your data frame (or
+#'   the name used in each node's `.values` list).
+#' @param header Character. Column header text. Defaults to a title-cased
+#'   version of `key` (e.g. `"market_cap"` → `"Market Cap"`).
+#' @param format Function `function(x) -> character` for display formatting.
 #'   Defaults to [base::format()].
-#' @param color_fn Function `function(x) -> CSS color string`, or `NULL`.
+#' @param color Function `function(x) -> CSS color string`, or `NULL`.
 #'   Default `NULL`.
-#' @param rollup_fn Function `function(vals, child_values) -> scalar` for
-#'   aggregating parent rows. `vals` is a numeric vector of this column's
-#'   values for direct children; `child_values` is a list of full value lists
-#'   (useful for weighted aggregation). Defaults to `sum`.
+#' @param rollup How parent rows are aggregated. Either a shortcut string
+#'   (`"sum"` or `"mean"`) or a function `function(vals, child_values) ->
+#'   scalar`. `vals` is a numeric vector of children's values for this column;
+#'   `child_values` is the full list of each child's value lists (useful for
+#'   weighted aggregation via [weighted_rollup()]). Defaults to `"sum"`.
 #' @return A named list describing the column.
 #' @export
-col_def <- function(header,
-                    key,
-                    format_fn  = function(x) format(x),
-                    color_fn   = NULL,
-                    rollup_fn  = function(vals, child_values) sum(vals, na.rm = TRUE)) {
+col_def <- function(key,
+                    header = NULL,
+                    format = function(x) base::format(x),
+                    color  = NULL,
+                    rollup = "sum") {
+  if (is.null(header)) header <- pretty_header(key)
   list(header    = header,
        key       = key,
-       format_fn = format_fn,
-       color_fn  = color_fn,
-       rollup_fn = rollup_fn)
+       format_fn = format,
+       color_fn  = color,
+       rollup_fn = resolve_rollup(rollup))
 }
 
 #' Currency format function factory
