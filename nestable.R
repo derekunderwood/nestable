@@ -283,21 +283,31 @@ render_html <- function(tree, cols, th) {
 </table>
 
 <script>
+function hideDescendants(parentId) {
+  document.querySelectorAll("[data-parent=\'" + parentId + "\']").forEach(function(row) {
+    row.style.display = "none";
+    hideDescendants(row.id);
+  });
+}
+
+function showChildren(parentId) {
+  document.querySelectorAll("[data-parent=\'" + parentId + "\']").forEach(function(row) {
+    row.style.display = "";
+    var btn = row.querySelector("button.toggle");
+    if (btn && btn.getAttribute("aria-expanded") === "true") {
+      showChildren(row.id);
+    }
+  });
+}
+
 function toggleChildren(btn) {
   var targetId = btn.getAttribute("data-target");
   var expanded = btn.getAttribute("aria-expanded") === "true";
-  var children = document.querySelectorAll("[data-parent=\'" + targetId + "\']");
-  children.forEach(function(row) {
-    if (expanded) {
-      row.style.display = "none";
-      var childBtn = row.querySelector("button.toggle");
-      if (childBtn && childBtn.getAttribute("aria-expanded") === "true") {
-        toggleChildren(childBtn);
-      }
-    } else {
-      row.style.display = "";
-    }
-  });
+  if (expanded) {
+    hideDescendants(targetId);
+  } else {
+    showChildren(targetId);
+  }
   btn.setAttribute("aria-expanded", expanded ? "false" : "true");
 }
 </script>
