@@ -37,9 +37,28 @@ rows_to_nodes <- function(df, name_col, value_cols) {
 #'   Each element adds one nesting level. `NULL` returns a flat list of leaves.
 #' @param total Optional string. When non-`NULL` a single root node with this
 #'   label wraps the entire tree (grand-total row). `NULL` for no total.
+#' @param node_values Optional named list of pre-supplied values for group
+#'   (and total) nodes. Each name is a node label; each value is a named list
+#'   of column values that should be displayed as-is rather than rolled up from
+#'   children. Useful when aggregated figures (e.g. time-weighted returns) are
+#'   already known and differ from a simple weighted average of the leaves.
+#'
+#'   Example — supply a pre-computed return for the "Technology" sector and the
+#'   "Mag 7" grand total:
+#'   ```r
+#'   node_values = list(
+#'     "Technology" = list(ytd_return = 2.5),
+#'     "Mag 7"      = list(ytd_return = 4.1)
+#'   )
+#'   ```
+#'   Any column *not* listed for a node still falls back to rollup from
+#'   children.
 #' @return A list of [node()] objects suitable for passing to [nestable()].
 #' @export
-df_to_tree <- function(df, name_col, value_cols, group_col = NULL, total = NULL) {
+df_to_tree <- function(df, name_col, value_cols,
+                       group_col   = NULL,
+                       total       = NULL,
+                       node_values = list()) {
   result <- if (is.null(group_col) || length(group_col) == 0) {
     rows_to_nodes(df, name_col, value_cols)
   } else {
@@ -47,10 +66,17 @@ df_to_tree <- function(df, name_col, value_cols, group_col = NULL, total = NULL)
     rest   <- if (length(group_col) > 1) group_col[-1] else NULL
     groups <- unique(df[[g]])
     lapply(groups, function(grp) {
-      sub <- df[df[[g]] == grp, , drop = FALSE]
-      do.call(node, c(list(name = grp),
-                      df_to_tree(sub, name_col, value_cols, rest)))
+      sub        <- df[df[[g]] == grp, , drop = FALSE]
+      supplied   <- if (!is.null(node_values[[grp]])) node_values[[grp]] else list()
+      children   <- df_to_tree(sub, name_col, value_cols, rest,
+                               node_values = node_values)
+      do.call(node, c(list(name = grp, .values = supplied), children))
     })
   }
-  if (!is.null(total)) list(do.call(node, c(list(name = total), result))) else result
+  if (!is.null(total)) {
+    supplied <- if (!is.null(node_values[[total]])) node_values[[total]] else list()
+    list(do.call(node, c(list(name = total, .values = supplied), result)))
+  } else {
+    result
+  }
 }

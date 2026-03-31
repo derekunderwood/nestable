@@ -22,13 +22,27 @@ mag7 <- data.frame(
   stringsAsFactors = FALSE
 )
 
+# Pre-supplied aggregated returns (e.g. from a performance attribution system).
+# These override rollup for the named nodes; any unlisted column still rolls up.
+supplied_returns <- list(
+  "Hardware"              = list(ytd_return = -10.5),
+  "Software"              = list(ytd_return =  -7.8),
+  "Semiconductors"        = list(ytd_return =  23.0),
+  "Search & Ads"          = list(ytd_return =   5.1),
+  "Social Media"          = list(ytd_return =  18.0),
+  "E-Commerce"            = list(ytd_return =   3.2),
+  "EV & Auto"             = list(ytd_return = -32.8),
+  "Mag 7"                 = list(ytd_return =   2.9)
+)
+
 # group_col applied outermost-first: sector > subsector > stock
 # total = "Mag 7" adds an optional grand-total root row; set NULL to remove it
 data_root <- df_to_tree(mag7,
-  name_col   = "name",
-  value_cols = c("market_cap", "ytd_return"),
-  group_col  = c("sector", "subsector"),
-  total      = "Mag 7"
+  name_col    = "name",
+  value_cols  = c("market_cap", "ytd_return"),
+  group_col   = c("sector", "subsector"),
+  total       = "Mag 7",
+  node_values = supplied_returns
 )
 
 # ---------------------------------------------------------------------------
