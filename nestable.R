@@ -7,8 +7,10 @@
 #   node(name, ..., .values = list())
 #     name    — display label for this row
 #     ...     — child node()s (makes this a parent/group row)
-#     .values — named list of column values (leaf rows only)
-#               Parent values are computed from children via rollup functions.
+#     .values — named list of column values.
+#               For leaf nodes, supply all column values here.
+#               For parent nodes, any value supplied here overrides the rollup
+#               for that column; omitted columns are still computed from children.
 #
 # data_root is a list of top-level nodes (no single wrapper = no grand total).
 # Edit data_root and columns to fit your data.
@@ -122,6 +124,9 @@ rollup <- function(node, cols) {
   child_values <- lapply(node$children, `[[`, "values")
 
   for (col in cols) {
+    existing <- node$values[[col$key]]
+    if (!is.null(existing) && !is.na(existing)) next   # explicit value wins
+
     vals <- sapply(child_values, function(v) {
       x <- v[[col$key]]
       if (is.null(x)) NA_real_ else as.numeric(x)
