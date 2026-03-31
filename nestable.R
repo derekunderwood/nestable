@@ -1,156 +1,169 @@
 # nestable.R
-# Self-contained R script: nestable expandable portfolio table rendered as HTML.
+# Self-contained R script: generic nestable expandable HTML table.
 
 # =============================================================================
-# 1. MOCK DATA
-# Flat data.frame representing leaf-level portfolio positions.
-# parent = NA marks root-level portfolios.
-# market_value and performance are leaf inputs; parents are rolled up later.
+# 1. DATA — define your hierarchy with node()
+#
+#   node(name, ..., .values = list())
+#     name    — display label for this row
+#     ...     — child node()s (makes this a parent/group row)
+#     .values — named list of column values (leaf rows only)
+#               Parent values are computed from children via rollup functions.
+#
+# data_root is a list of top-level nodes (no single wrapper = no grand total).
+# Edit data_root and columns to fit your data.
 # =============================================================================
 
-positions <- data.frame(
-  id           = 1:14,
-  name         = c(
-    "Total Portfolio",
-    "Equity",
-      "US Equity",
-        "Large Cap Growth",
-        "Large Cap Value",
-      "International Equity",
-        "Developed Markets",
-        "Emerging Markets",
-    "Fixed Income",
-      "Investment Grade",
-        "US Treasuries",
-        "Corporate Bonds",
-      "High Yield",
-    "Alternatives"
+node <- function(name, ..., .values = list()) {
+  list(name = name, values = as.list(.values), children = list(...))
+}
+
+# --- Sample data ------------------------------------------------------------
+
+data_root <- list(
+
+  node("Equity",
+    node("US Equity",
+      node("Large Cap Growth", .values = list(market_value = 450000, performance =  12.4)),
+      node("Large Cap Value",  .values = list(market_value = 380000, performance =   8.1))
+    ),
+    node("International",
+      node("Developed Markets", .values = list(market_value = 310000, performance =   6.3)),
+      node("Emerging Markets",  .values = list(market_value = 180000, performance =  -2.7))
+    )
   ),
-  parent       = c(
-    NA,   # Total Portfolio  (root)
-    1,    # Equity           -> Total Portfolio
-    2,    # US Equity        -> Equity
-    3,    # Large Cap Growth -> US Equity
-    3,    # Large Cap Value  -> US Equity
-    2,    # Intl Equity      -> Equity
-    6,    # Developed Mkts   -> Intl Equity
-    6,    # Emerging Mkts    -> Intl Equity
-    1,    # Fixed Income     -> Total Portfolio
-    9,    # Inv Grade        -> Fixed Income
-    10,   # US Treasuries    -> Inv Grade
-    10,   # Corporate Bonds  -> Inv Grade
-    9,    # High Yield       -> Fixed Income
-    1     # Alternatives     -> Total Portfolio
+
+  node("Fixed Income",
+    node("Investment Grade",
+      node("US Treasuries",   .values = list(market_value = 220000, performance =  3.2)),
+      node("Corporate Bonds", .values = list(market_value = 195000, performance =  4.8))
+    ),
+    node("High Yield", .values = list(market_value =  90000, performance = -1.5))
   ),
-  # Leaf market values (USD); parent values will be summed from children
-  market_value = c(
-    NA, NA, NA,
-    450000, 380000,          # Large Cap Growth/Value
-    NA,
-    310000, 180000,          # Developed/Emerging
-    NA, NA,
-    220000, 195000,          # Treasuries/Corporate
-    90000,                   # High Yield
-    160000                   # Alternatives
+
+  node("Alternatives", .values = list(market_value = 160000, performance = 9.2))
+
+)
+
+# --- Column definitions -----------------------------------------------------
+# Each column is a list with:
+#   header    — column header string
+#   key       — field name in node$values
+#   format_fn — function(x) -> character string for display
+#   color_fn  — function(x) -> CSS color string, or NULL for no color
+#   rollup_fn — function(vals, child_values) -> scalar
+#               vals         = numeric vector of this key for direct children
+#               child_values = list of full value lists for direct children
+#                              (useful for weighted aggregation)
+
+fmt_usd <- function(x) paste0("$", formatC(x, format = "f", digits = 2, big.mark = ","))
+
+fmt_pct <- function(x) {
+  s <- if (x >= 0) "+" else ""
+  paste0(s, formatC(x, format = "f", digits = 2), "%")
+}
+
+columns <- list(
+  list(
+    header    = "Market Value",
+    key       = "market_value",
+    format_fn = fmt_usd,
+    color_fn  = NULL,
+    rollup_fn = function(vals, child_values) sum(vals)
   ),
-  # Leaf performance (%); parents computed as weighted average
-  performance  = c(
-    NA, NA, NA,
-     12.4,  8.1,
-    NA,
-     6.3, -2.7,
-    NA, NA,
-     3.2,  4.8,
-    -1.5,
-     9.2
-  ),
-  stringsAsFactors = FALSE
+  list(
+    header    = "Performance",
+    key       = "performance",
+    format_fn = fmt_pct,
+    color_fn  = function(x) if (x >= 0) "#2e7d32" else "#c62828",
+    rollup_fn = function(vals, child_values) {
+      weights <- sapply(child_values, function(v) v[["market_value"]])
+      total_w <- sum(weights)
+      if (total_w == 0) 0 else sum(vals * weights) / total_w
+    }
+  )
+)
+
+# --- Theme ------------------------------------------------------------------
+# Override any of these values to restyle the table without touching the logic.
+
+theme <- list(
+  title         = "Holdings",
+  font_family   = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  font_size     = "14px",
+  page_bg       = "#f5f5f5",
+  page_color    = "#212121",
+  page_padding  = "24px",
+  table_bg      = "#ffffff",
+  table_shadow  = "0 1px 4px rgba(0,0,0,.12)",
+  table_radius  = "6px",
+  table_max_w   = "680px",
+  header_bg     = "#37474f",
+  header_color  = "#ffffff",
+  row_border    = "#eceff1",
+  row_hover_bg  = "#f9fbe7",
+  parent_weight = "600",
+  toggle_color  = "#546e7a",
+  indent_px     = 20
 )
 
 
 # =============================================================================
-# 2. HIERARCHY BUILDER & ROLLUP ENGINE
-# Builds a tree from the flat frame and computes rollups bottom-up so that
-# no values are hardcoded.
+# 2. ROLLUP ENGINE + ID ASSIGNMENT
+# Walks the tree bottom-up, computing each parent's column values via the
+# rollup_fn defined in columns. Then stamps each node with a unique id.
 # =============================================================================
 
-# build_tree() converts the flat data.frame into a nested list.
-# Each node is a list with fields: id, name, market_value, performance, children.
-# Rollups are computed recursively after attaching children.
-build_tree <- function(df, parent_id = NA) {
-  # Select rows whose parent matches parent_id (handles NA root correctly)
-  if (is.na(parent_id)) {
-    rows <- df[is.na(df$parent), ]
-  } else {
-    rows <- df[!is.na(df$parent) & df$parent == parent_id, ]
+rollup <- function(node, cols) {
+  if (length(node$children) == 0) return(node)
+
+  node$children <- lapply(node$children, rollup, cols = cols)
+
+  child_values <- lapply(node$children, `[[`, "values")
+
+  for (col in cols) {
+    vals <- sapply(child_values, function(v) {
+      x <- v[[col$key]]
+      if (is.null(x)) NA_real_ else as.numeric(x)
+    })
+    node$values[[col$key]] <- col$rollup_fn(vals, child_values)
   }
 
-  lapply(seq_len(nrow(rows)), function(i) {
-    row      <- rows[i, ]
-    children <- build_tree(df, row$id)   # recurse
+  node
+}
 
-    # --- rollup ---
-    if (length(children) == 0) {
-      # Leaf node: use raw values
-      mv   <- row$market_value
-      perf <- row$performance
-    } else {
-      # Parent node: sum children market values
-      child_mvs   <- sapply(children, `[[`, "market_value")
-      child_perfs <- sapply(children, `[[`, "performance")
-      mv          <- sum(child_mvs)
-      # Weighted average performance, weighted by each child's market value
-      perf <- sum(child_perfs * child_mvs) / mv
-    }
+assign_ids <- function(node, env = new.env(parent = emptyenv())) {
+  if (is.null(env$counter)) env$counter <- 0L
+  env$counter   <- env$counter + 1L
+  node$id       <- env$counter
+  node$children <- lapply(node$children, assign_ids, env = env)
+  node
+}
 
-    list(
-      id           = row$id,
-      name         = row$name,
-      market_value = mv,
-      performance  = perf,
-      children     = children
-    )
-  })
+build_tree <- function(roots, cols) {
+  roots <- lapply(roots, rollup, cols = cols)
+  roots <- lapply(roots, assign_ids)
+  roots
 }
 
 
 # =============================================================================
 # 3. HTML RENDERER
-# Walks the tree recursively and emits one <tr> per node.
-# depth controls px indentation; parent rows get a toggle button.
+# Walks the tree recursively, emitting one <tr> per node.
 # =============================================================================
 
-# format helpers
-fmt_currency <- function(x) {
-  # e.g. $1,234,567.00
-  paste0("$", formatC(x, format = "f", digits = 2, big.mark = ","))
-}
-
-fmt_percent <- function(x) {
-  # e.g. +12.40% or -1.50%
-  sign <- if (x >= 0) "+" else ""
-  paste0(sign, formatC(x, format = "f", digits = 2), "%")
-}
-
-perf_color <- function(x) if (x >= 0) "#2e7d32" else "#c62828"
-
-# render_rows() returns a character vector of <tr> strings.
-# node_id_prefix: unique CSS class prefix used by JS toggle logic.
-render_rows <- function(nodes, depth = 0, parent_css_id = NULL) {
+render_rows <- function(nodes, cols, depth = 0, parent_css_id = NULL, th) {
   rows <- character(0)
 
   for (node in nodes) {
     has_children <- length(node$children) > 0
-    indent_px    <- depth * 20          # 20 px per level
+    indent_px    <- depth * th$indent_px
     css_id       <- paste0("node-", node$id)
 
-    # Child rows are hidden by default (except depth-0 which are always shown).
-    # They carry a data-parent attribute so the JS can find them.
-    hidden_attr  <- if (!is.null(parent_css_id)) ' style="display:none"' else ""
-    parent_attr  <- if (!is.null(parent_css_id))
-                      paste0(' data-parent="', parent_css_id, '"') else ""
+    hidden_attr <- if (!is.null(parent_css_id)) ' style="display:none"' else ""
+    parent_attr <- if (!is.null(parent_css_id))
+                     paste0(' data-parent="', parent_css_id, '"') else ""
 
-    # Toggle button for parent rows; spacer for leaves
     toggle <- if (has_children) {
       paste0('<button class="toggle" data-target="', css_id,
              '" onclick="toggleChildren(this)" aria-expanded="false">&#9654;</button>')
@@ -158,38 +171,33 @@ render_rows <- function(nodes, depth = 0, parent_css_id = NULL) {
       '<span class="toggle-spacer"></span>'
     }
 
-    # Name cell with indentation and toggle
-    name_cell <- paste0(
+    name_td <- paste0(
       '<td style="padding-left:', indent_px + 8, 'px">',
       toggle,
       if (has_children) paste0('<strong>', node$name, '</strong>') else node$name,
       '</td>'
     )
 
-    mv_cell <- paste0(
-      '<td class="num">', fmt_currency(node$market_value), '</td>'
-    )
+    value_tds <- sapply(cols, function(col) {
+      val      <- node$values[[col$key]]
+      display  <- if (is.null(val) || is.na(val)) "&mdash;" else col$format_fn(val)
+      color    <- if (!is.null(col$color_fn) && !is.null(val) && !is.na(val))
+                    paste0(' style="color:', col$color_fn(val), '"') else ""
+      paste0('<td class="num"', color, '>', display, '</td>')
+    })
 
-    perf_cell <- paste0(
-      '<td class="num" style="color:', perf_color(node$performance), '">',
-      fmt_percent(node$performance),
-      '</td>'
-    )
+    row_class <- if (has_children) "parent-row" else "leaf-row"
 
-    row_class <- if (has_children) ' class="parent-row"' else ' class="leaf-row"'
+    rows <- c(rows, paste0(
+      '<tr id="', css_id, '" class="', row_class, '"', parent_attr, hidden_attr, '>',
+      name_td, paste(value_tds, collapse = ""), '</tr>'
+    ))
 
-    tr <- paste0(
-      '<tr id="', css_id, '"', row_class, parent_attr, hidden_attr, '>',
-      name_cell, mv_cell, perf_cell,
-      '</tr>'
-    )
-    rows <- c(rows, tr)
-
-    # Recurse into children, passing this node's css_id so they know their parent
     if (has_children) {
-      rows <- c(rows, render_rows(node$children,
-                                  depth       = depth + 1,
-                                  parent_css_id = css_id))
+      rows <- c(rows, render_rows(node$children, cols,
+                                  depth         = depth + 1,
+                                  parent_css_id = css_id,
+                                  th            = th))
     }
   }
 
@@ -199,69 +207,69 @@ render_rows <- function(nodes, depth = 0, parent_css_id = NULL) {
 
 # =============================================================================
 # 4. ASSEMBLE & DISPLAY
-# Wraps rendered rows in a full HTML document with embedded CSS and JS.
 # =============================================================================
 
-render_portfolio_html <- function(tree) {
+render_html <- function(tree, cols, th) {
+  header_ths <- paste(
+    sapply(cols, function(col) paste0('<th class="num">', col$header, '</th>')),
+    collapse = "\n      "
+  )
 
-  rows_html <- paste(render_rows(tree), collapse = "\n")
+  rows_html <- paste(render_rows(tree, cols, th = th), collapse = "\n")
 
-  html <- paste0('<!DOCTYPE html>
+  paste0('<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Portfolio</title>
+<title>', th$title, '</title>
 <style>
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    font-size: 14px;
-    background: #f5f5f5;
-    padding: 24px;
-    color: #212121;
+    font-family: ', th$font_family, ';
+    font-size: ', th$font_size, ';
+    background: ', th$page_bg, ';
+    padding: ', th$page_padding, ';
+    color: ', th$page_color, ';
   }
-  h2 { margin-bottom: 12px; color: #37474f; }
+  h2 { margin-bottom: 12px; color: ', th$header_bg, '; }
   table {
     border-collapse: collapse;
     width: 100%;
-    max-width: 680px;
-    background: #fff;
-    box-shadow: 0 1px 4px rgba(0,0,0,.12);
-    border-radius: 6px;
+    max-width: ', th$table_max_w, ';
+    background: ', th$table_bg, ';
+    box-shadow: ', th$table_shadow, ';
+    border-radius: ', th$table_radius, ';
     overflow: hidden;
   }
-  thead tr { background: #37474f; color: #fff; }
+  thead tr { background: ', th$header_bg, '; color: ', th$header_color, '; }
   th { padding: 10px 14px; text-align: left; font-weight: 600; }
   th.num { text-align: right; }
-  td { padding: 8px 14px; border-bottom: 1px solid #eceff1; }
+  td { padding: 8px 14px; border-bottom: 1px solid ', th$row_border, '; }
   td.num { text-align: right; font-variant-numeric: tabular-nums; }
   tr:last-child td { border-bottom: none; }
-  tr.parent-row > td:first-child { font-weight: 600; }
-  tr:hover td { background: #f9fbe7; }
+  tr.parent-row > td:first-child { font-weight: ', th$parent_weight, '; }
+  tr:hover td { background: ', th$row_hover_bg, '; }
   button.toggle {
     background: none;
     border: none;
     cursor: pointer;
     padding: 0 6px 0 0;
     font-size: 10px;
-    color: #546e7a;
+    color: ', th$toggle_color, ';
     transition: transform .15s;
     vertical-align: middle;
     line-height: 1;
   }
-  button.toggle[aria-expanded="true"] {
-    transform: rotate(90deg);
-  }
+  button.toggle[aria-expanded="true"] { transform: rotate(90deg); }
   .toggle-spacer { display: inline-block; width: 16px; }
 </style>
 </head>
 <body>
-<h2>Portfolio Holdings</h2>
+<h2>', th$title, '</h2>
 <table>
   <thead>
     <tr>
       <th>Name</th>
-      <th class="num">Market Value</th>
-      <th class="num">Performance</th>
+      ', header_ths, '
     </tr>
   </thead>
   <tbody>
@@ -270,54 +278,38 @@ render_portfolio_html <- function(tree) {
 </table>
 
 <script>
-// Toggle direct children of a parent row.
-// Uses data-parent attribute to find immediate children only.
 function toggleChildren(btn) {
   var targetId = btn.getAttribute("data-target");
   var expanded = btn.getAttribute("aria-expanded") === "true";
-
-  // Find all rows that are direct children of this node
   var children = document.querySelectorAll("[data-parent=\'" + targetId + "\']");
-
   children.forEach(function(row) {
     if (expanded) {
-      // Collapse: hide this row and recursively collapse its own children
       row.style.display = "none";
       var childBtn = row.querySelector("button.toggle");
       if (childBtn && childBtn.getAttribute("aria-expanded") === "true") {
-        toggleChildren(childBtn);   // cascade collapse
+        toggleChildren(childBtn);
       }
     } else {
-      // Expand: only show direct children (their children stay hidden)
       row.style.display = "";
     }
   });
-
   btn.setAttribute("aria-expanded", expanded ? "false" : "true");
 }
 </script>
 </body>
 </html>')
-
-  html
 }
 
-# --- Run ---
-tree     <- build_tree(positions)
-html_out <- render_portfolio_html(tree)
+# --- Run --------------------------------------------------------------------
+tree     <- build_tree(data_root, columns)
+html_out <- render_html(tree, columns, theme)
 
-# Write to file and open in viewer/browser
-out_file <- file.path(tempdir(), "portfolio.html")
+out_file <- file.path(tempdir(), "nestable.html")
 writeLines(html_out, out_file)
 
-# Works in RStudio (Viewer pane) and plain R (system browser)
 if (interactive()) {
   viewer <- getOption("viewer")
-  if (!is.null(viewer)) {
-    viewer(out_file)
-  } else {
-    browseURL(out_file)
-  }
+  if (!is.null(viewer)) viewer(out_file) else browseURL(out_file)
 } else {
   message("Output written to: ", out_file)
 }
