@@ -1,0 +1,56 @@
+#' Define a tree node
+#'
+#' @param name Display label shown in the Name column.
+#' @param ... Child [node()] objects. Supplying children makes this a parent
+#'   (group) row whose column values are rolled up from children unless
+#'   overridden via `.values`.
+#' @param .values Named list of column values. For leaf nodes supply all values
+#'   here. For parent nodes any value supplied here overrides the computed
+#'   rollup for that column; omitted columns are still computed from children.
+#' @return A named list with elements `name`, `values`, and `children`.
+#' @export
+node <- function(name, ..., .values = list()) {
+  list(name = name, values = as.list(.values), children = list(...))
+}
+
+#' Convert data frame rows into leaf nodes
+#'
+#' @param df A data frame.
+#' @param name_col Column name to use as the node label.
+#' @param value_cols Character vector of column names to carry as `.values`.
+#' @return A list of [node()] objects.
+#' @export
+rows_to_nodes <- function(df, name_col, value_cols) {
+  lapply(seq_len(nrow(df)), function(i) {
+    row    <- df[i, , drop = FALSE]
+    values <- as.list(row[, value_cols, drop = FALSE])
+    node(as.character(row[[name_col]]), .values = values)
+  })
+}
+
+#' Convert a flat data frame into a nested node tree
+#'
+#' @param df A data frame.
+#' @param name_col Column name to use as the node label (leaf rows).
+#' @param value_cols Character vector of value column names.
+#' @param group_col Character vector of grouping columns, outermost first.
+#'   Each element adds one nesting level. `NULL` returns a flat list of leaves.
+#' @param total Optional string. When non-`NULL` a single root node with this
+#'   label wraps the entire tree (grand-total row). `NULL` for no total.
+#' @return A list of [node()] objects suitable for passing to [nestable()].
+#' @export
+df_to_tree <- function(df, name_col, value_cols, group_col = NULL, total = NULL) {
+  result <- if (is.null(group_col) || length(group_col) == 0) {
+    rows_to_nodes(df, name_col, value_cols)
+  } else {
+    g      <- group_col[1]
+    rest   <- if (length(group_col) > 1) group_col[-1] else NULL
+    groups <- unique(df[[g]])
+    lapply(groups, function(grp) {
+      sub <- df[df[[g]] == grp, , drop = FALSE]
+      do.call(node, c(list(name = grp),
+                      df_to_tree(sub, name_col, value_cols, rest)))
+    })
+  }
+  if (!is.null(total)) list(do.call(node, c(list(name = total), result))) else result
+}

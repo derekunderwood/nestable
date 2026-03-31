@@ -1,0 +1,97 @@
+/* nestable.css — loaded once per page via htmlDependency */
+
+/* -------------------------------------------------------------------------
+   Wrapper / theme scope
+   All --ntbl-* variables are set inline on .ntbl-wrap by nestable().
+   CSS fallbacks ensure the table renders even without those inline values.
+   ------------------------------------------------------------------------- */
+.ntbl-wrap {
+  font-family: var(--ntbl-font-family,
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+  font-size: var(--ntbl-font-size, 14px);
+}
+
+.ntbl-title {
+  margin-bottom: 12px;
+  color: var(--ntbl-header-bg, #37474f);
+}
+
+/* -------------------------------------------------------------------------
+   Table chrome
+   ------------------------------------------------------------------------- */
+.ntbl {
+  border-collapse: collapse;
+  width:           100%;
+  max-width:       var(--ntbl-table-max-w, 680px);
+  background:      var(--ntbl-table-bg, #ffffff);
+  box-shadow:      var(--ntbl-table-shadow, 0 1px 4px rgba(0,0,0,.12));
+  border-radius:   var(--ntbl-table-radius, 6px);
+  overflow:        hidden;
+}
+
+/* -------------------------------------------------------------------------
+   Header
+   ------------------------------------------------------------------------- */
+.ntbl thead tr {
+  background: var(--ntbl-header-bg,    #37474f);
+  color:      var(--ntbl-header-color, #ffffff);
+}
+
+.ntbl th {
+  padding:     10px 14px;
+  text-align:  left;
+  font-weight: 600;
+}
+
+.ntbl th.ntbl-num {
+  text-align: right;
+}
+
+/* -------------------------------------------------------------------------
+   Body rows
+   ------------------------------------------------------------------------- */
+.ntbl td {
+  padding:       8px 14px;
+  border-bottom: 1px solid var(--ntbl-row-border, #eceff1);
+}
+
+.ntbl td.ntbl-num {
+  text-align:           right;
+  font-variant-numeric: tabular-nums;
+}
+
+.ntbl tr:last-child td {
+  border-bottom: none;
+}
+
+.ntbl tr.ntbl-parent > td:first-child {
+  font-weight: var(--ntbl-parent-weight, 600);
+}
+
+.ntbl tr.ntbl-row:hover td {
+  background: var(--ntbl-row-hover-bg, #f9fbe7);
+}
+
+/* -------------------------------------------------------------------------
+   Toggle button
+   ------------------------------------------------------------------------- */
+.ntbl-toggle {
+  background:     none;
+  border:         none;
+  cursor:         pointer;
+  padding:        0 6px 0 0;
+  font-size:      10px;
+  color:          var(--ntbl-toggle-color, #546e7a);
+  transition:     transform .15s;
+  vertical-align: middle;
+  line-height:    1;
+}
+
+.ntbl-toggle[aria-expanded="true"] {
+  transform: rotate(90deg);
+}
+
+.ntbl-toggle-spacer {
+  display: inline-block;
+  width:   16px;
+}

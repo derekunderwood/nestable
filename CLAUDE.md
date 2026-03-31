@@ -42,3 +42,14 @@ The script is organized into four logical sections:
 | Performance | `+1.23%` / `-0.45%`, green if ≥ 0, red if < 0 |
 
 A "Total Portfolio" root row that aggregates everything is optional but desirable.
+
+## You are working in a git repository.
+
+Rules:
+- Commit early and often
+- Each commit must represent one logical change
+- Always include a concise, descriptive commit message
+- After every code edit, immediately show the git commands used to commit
+- Never accumulate multiple changes before committing
+
+If you forget to commit, correct yourself before proceeding.
