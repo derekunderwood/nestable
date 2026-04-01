@@ -85,6 +85,43 @@ th <- nestable_theme(
 nestable(data_root, columns, th)
 
 # ---------------------------------------------------------------------------
+# Example 2: iris — general (non-financial) table
+# ---------------------------------------------------------------------------
+
+iris_data <- iris
+iris_data$obs <- paste0("Obs.", seq_len(nrow(iris_data)))
+
+# Each row is a leaf (observation); Species is the grouping level.
+# Rollup uses "mean" so group rows show the average measurement.
+iris_root <- df_to_tree(iris_data,
+  name_col   = "obs",
+  value_cols = c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width"),
+  group_col  = "Species",
+  total      = "All Species"
+)
+
+iris_cols <- list(
+  col_def("Sepal.Length", rollup = "mean",
+          format = function(x) formatC(x, digits = 2L, format = "f")),
+  col_def("Sepal.Width",  rollup = "mean",
+          format = function(x) formatC(x, digits = 2L, format = "f")),
+  col_def("Petal.Length", rollup = "mean",
+          format = function(x) formatC(x, digits = 2L, format = "f")),
+  col_def("Petal.Width",  rollup = "mean",
+          format = function(x) formatC(x, digits = 2L, format = "f"))
+)
+
+iris_theme <- nestable_theme(
+  title       = "iris: measurements by species",
+  table_max_w = "800px",
+  header_bg   = "#4527a0"
+)
+
+nestable(iris_root, iris_cols,
+         name_header = "Observation",
+         theme       = iris_theme)
+
+# ---------------------------------------------------------------------------
 # Shiny usage:
 #
 #   library(shiny)

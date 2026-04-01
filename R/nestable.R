@@ -104,6 +104,8 @@ render_rows <- function(nodes, cols, depth, parent_id, indent_px) {
 #'     \item A list of [col_def()] objects for full control over formatting,
 #'           colours, and rollup behaviour.
 #'   }
+#' @param name_header Character. Header label for the first (name/label) column.
+#'   Default `"Name"`.
 #' @param theme A theme list from [nestable_theme()].
 #' @param uid Character. Widget UID prefix for HTML element `id` attributes.
 #'   Defaults to a random string so multiple tables on one page never clash.
@@ -114,6 +116,7 @@ render_rows <- function(nodes, cols, depth, parent_id, indent_px) {
 #' @export
 nestable <- function(data_root,
                      columns,
+                     name_header = "Name",
                      theme = nestable_theme(),
                      uid   = new_widget_uid()) {
 
@@ -150,7 +153,7 @@ nestable <- function(data_root,
     if (nchar(theme$title) > 0) tags$h2(class = "ntbl-title", theme$title),
     tags$table(
       class = "ntbl",
-      tags$thead(tags$tr(tags$th("Name"), header_cells)),
+      tags$thead(tags$tr(tags$th(name_header), header_cells)),
       tags$tbody(body_rows)
     )
   )
