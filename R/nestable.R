@@ -116,9 +116,9 @@ render_rows <- function(nodes, cols, depth, parent_id, indent_px) {
 #' @export
 nestable <- function(data_root,
                      columns,
+                     theme       = nestable_theme(),
                      name_header = "Name",
-                     theme = nestable_theme(),
-                     uid   = new_widget_uid()) {
+                     uid         = new_widget_uid()) {
 
   columns <- normalise_columns(columns)
   tree <- build_tree(data_root, columns, prefix = paste0(uid, "-"))

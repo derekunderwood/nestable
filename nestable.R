@@ -117,9 +117,7 @@ iris_theme <- nestable_theme(
   header_bg   = "#4527a0"
 )
 
-nestable(iris_root, iris_cols,
-         name_header = "Observation",
-         theme       = iris_theme)
+nestable(iris_root, iris_cols, iris_theme, name_header = "Observation")
 
 # ---------------------------------------------------------------------------
 # Shiny usage:
