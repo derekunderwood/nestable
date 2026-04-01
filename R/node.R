@@ -67,10 +67,11 @@ df_to_tree <- function(df, name_col, value_cols,
     groups <- unique(df[[g]])
     lapply(groups, function(grp) {
       sub        <- df[df[[g]] == grp, , drop = FALSE]
-      supplied   <- if (!is.null(node_values[[grp]])) node_values[[grp]] else list()
+      grp_key    <- as.character(grp)
+      supplied   <- if (!is.null(node_values[[grp_key]])) node_values[[grp_key]] else list()
       children   <- df_to_tree(sub, name_col, value_cols, rest,
                                node_values = node_values)
-      do.call(node, c(list(name = grp, .values = supplied), children))
+      do.call(node, c(list(name = grp_key, .values = supplied), children))
     })
   }
   if (!is.null(total)) {
