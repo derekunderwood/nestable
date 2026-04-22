@@ -58,13 +58,15 @@ data_root <- df_to_tree(mag7,
 columns <- list(
   col_def("market_cap",
     header = "Market Cap",
-    format = fmt_currency("$", "B", digits = 1L)
+    format = fmt_currency("$", "B", digits = 1L),
+    width  = "130px"                               # fixed width; prevents wrapping
   ),
   col_def("ytd_return",
     header = "YTD Return",
     format = fmt_percent(digits = 2L),
     color  = function(x) if (x >= 0) "#2e7d32" else "#c62828",
-    rollup = weighted_rollup("market_cap")
+    rollup = weighted_rollup("market_cap"),
+    width  = "110px"
   )
 )
 
@@ -101,20 +103,21 @@ iris_root <- df_to_tree(iris_data,
 )
 
 iris_cols <- list(
-  col_def("Sepal.Length", rollup = "mean",
+  col_def("Sepal.Length", rollup = "mean", width = "115px",
           format = function(x) formatC(x, digits = 2L, format = "f")),
-  col_def("Sepal.Width",  rollup = "mean",
+  col_def("Sepal.Width",  rollup = "mean", width = "115px",
           format = function(x) formatC(x, digits = 2L, format = "f")),
-  col_def("Petal.Length", rollup = "mean",
+  col_def("Petal.Length", rollup = "mean", width = "115px",
           format = function(x) formatC(x, digits = 2L, format = "f")),
-  col_def("Petal.Width",  rollup = "mean",
+  col_def("Petal.Width",  rollup = "mean", width = "115px",
           format = function(x) formatC(x, digits = 2L, format = "f"))
 )
 
 iris_theme <- nestable_theme(
   title       = "iris: measurements by species",
   table_max_w = "800px",
-  header_bg   = "#4527a0"
+  header_bg   = "#4527a0",
+  zoom        = 0.9          # scale the whole table down; useful for wide layouts
 )
 
 nestable(iris_root, iris_cols, iris_theme, name_header = "Observation")
