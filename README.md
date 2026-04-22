@@ -8,7 +8,7 @@ Collapsible, expandable HTML tables from hierarchical R data. Works in the RStud
 # development version
 devtools::install_local(".")   # from the repo root
 # or
-devtools::install_github("you/nestable")
+devtools::install_github("dereku/nestable")
 ```
 
 ## Quick start
@@ -51,12 +51,29 @@ nestable(root, cols, name_header = "Observation")
 
 ```r
 df_to_tree(df,
-  name_col  = "stock",
+  name_col   = "stock",
   value_cols = c("market_cap", "ytd_return"),
   group_col  = c("sector", "subsector"),   # two nesting levels
   total      = "Total Portfolio"           # optional grand-total root row
 )
 ```
+
+**Optional hardcoded values** — parent and group nodes compute their column values by rolling up from children by default. You can override specific columns with pre-computed figures (e.g. time-weighted returns that differ from a simple weighted average) using `node_values`. Any column not listed still rolls up normally:
+
+```r
+df_to_tree(df,
+  name_col    = "stock",
+  value_cols  = c("market_cap", "ytd_return"),
+  group_col   = "sector",
+  total       = "Total Portfolio",
+  node_values = list(
+    "Technology"      = list(ytd_return = 2.5),   # override just this column
+    "Total Portfolio" = list(ytd_return = 4.1)
+  )
+)
+```
+
+The same override is available when building trees by hand via the `.values` argument of `node()`.
 
 ### Columns
 
@@ -68,9 +85,12 @@ col_def(
   header = "YTD Return",        # column header (auto-derived from key if omitted)
   format = fmt_percent(),       # display formatter
   color  = function(x) if (x >= 0) "green" else "red",
-  rollup = "mean"               # how parent rows are aggregated
+  rollup = "mean",              # how parent rows are aggregated
+  width  = "120px"             # optional fixed column width (prevents text wrapping)
 )
 ```
+
+Pass any CSS length to `width` (`"120px"`, `"10%"`, `"8rem"`) and the package sets `white-space: nowrap` automatically so cell content never wraps.
 
 **Built-in formatters**
 
@@ -94,13 +114,17 @@ col_def(
 ```r
 nestable_theme(
   title       = "My Table",
+  font_size   = "14px",        # base font size
   header_bg   = "#4527a0",
   table_max_w = "800px",
-  indent_px   = 20L
+  indent_px   = 20L,
+  zoom        = 1.25           # scale the entire widget (e.g. 1.25 = 125%)
 )
 ```
 
 All visual properties map to CSS custom properties (`--ntbl-*`) scoped to the widget's wrapper `<div>`, so multiple tables with different themes coexist on one page.
+
+**`zoom`** accepts a plain number (`1.25`), a percentage string (`"125%"`), or `"normal"` (default). It scales the whole table — rows, text, borders — without requiring individual font-size or dimension changes. For finer-grained size control, adjust `font_size` instead.
 
 ### Rendering
 
