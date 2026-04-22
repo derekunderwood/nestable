@@ -31,19 +31,23 @@ resolve_rollup <- function(rollup) {
 #'   scalar`. `vals` is a numeric vector of children's values for this column;
 #'   `child_values` is the full list of each child's value lists (useful for
 #'   weighted aggregation via [weighted_rollup()]). Defaults to `"sum"`.
+#' @param width CSS width string (e.g. `"120px"`, `"10%"`) applied to the
+#'   column header and every data cell. `NULL` (default) leaves width unset.
 #' @return A named list describing the column.
 #' @export
 col_def <- function(key,
                     header = NULL,
                     format = function(x) base::format(x),
                     color  = NULL,
-                    rollup = "sum") {
+                    rollup = "sum",
+                    width  = NULL) {
   if (is.null(header)) header <- pretty_header(key)
   list(header    = header,
        key       = key,
        format_fn = format,
        color_fn  = color,
-       rollup_fn = resolve_rollup(rollup))
+       rollup_fn = resolve_rollup(rollup),
+       width     = width)
 }
 
 #' Currency format function factory

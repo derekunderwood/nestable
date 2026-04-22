@@ -61,9 +61,13 @@ render_rows <- function(nodes, cols, depth, parent_id, indent_px) {
     value_tds <- lapply(cols, function(col) {
       val     <- nd$values[[col$key]]
       display <- if (is.null(val) || is.na(val)) HTML("&mdash;") else col$format_fn(val)
-      style   <- if (!is.null(col$color_fn) && !is.null(val) && !is.na(val))
-                   paste0("color:", col$color_fn(val))
-                 else NULL
+      parts   <- c(
+        if (!is.null(col$width))    paste0("width:",     col$width)    else NULL,
+        if (!is.null(col$width))    "white-space:nowrap"               else NULL,
+        if (!is.null(col$color_fn) && !is.null(val) && !is.na(val))
+          paste0("color:", col$color_fn(val))                          else NULL
+      )
+      style <- if (length(parts)) paste(parts, collapse = ";") else NULL
       tags$td(class = "ntbl-num", style = style, display)
     })
 
@@ -139,7 +143,11 @@ nestable <- function(data_root,
     sep = "; "
   )
 
-  header_cells <- lapply(columns, function(col) tags$th(class = "ntbl-num", col$header))
+  header_cells <- lapply(columns, function(col) {
+    hdr_style <- if (!is.null(col$width))
+      paste0("width:", col$width, ";white-space:nowrap") else NULL
+    tags$th(class = "ntbl-num", style = hdr_style, col$header)
+  })
 
   body_rows <- render_rows(tree, columns,
                            depth     = 0L,
