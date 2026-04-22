@@ -127,7 +127,10 @@ nestable <- function(data_root,
   columns <- normalise_columns(columns)
   tree <- build_tree(data_root, columns, prefix = paste0(uid, "-"))
 
-  css_vars <- paste(
+  zoom_css <- if (!is.null(theme$zoom) && theme$zoom != "normal")
+    sprintf("; zoom: %s", theme$zoom) else ""
+
+  css_vars <- paste0(paste(
     sprintf("--ntbl-font-family: %s",   theme$font_family),
     sprintf("--ntbl-font-size: %s",     theme$font_size),
     sprintf("--ntbl-table-bg: %s",      theme$table_bg),
@@ -141,7 +144,7 @@ nestable <- function(data_root,
     sprintf("--ntbl-parent-weight: %s", theme$parent_weight),
     sprintf("--ntbl-toggle-color: %s",  theme$toggle_color),
     sep = "; "
-  )
+  ), zoom_css)
 
   header_cells <- lapply(columns, function(col) {
     hdr_style <- if (!is.null(col$width))

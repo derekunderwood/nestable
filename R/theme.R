@@ -18,6 +18,10 @@
 #' @param parent_weight CSS font-weight for parent rows. Default `"600"`.
 #' @param toggle_color Colour of the expand/collapse arrow. Default `"#546e7a"`.
 #' @param indent_px Integer pixels of indentation per nesting level. Default `20L`.
+#' @param zoom CSS zoom level applied to the entire widget. Accepts any valid
+#'   CSS `zoom` value: a number (`1.25`), a percentage (`"125%"`), or `"normal"`
+#'   (default). Useful for global size/scale adjustments without touching
+#'   individual font-size or dimension settings.
 #' @return A named list of theme values.
 #' @export
 nestable_theme <- function(
@@ -34,7 +38,8 @@ nestable_theme <- function(
   row_hover_bg  = "#f9fbe7",
   parent_weight = "600",
   toggle_color  = "#546e7a",
-  indent_px     = 20L
+  indent_px     = 20L,
+  zoom          = "normal"
 ) {
   list(
     title         = title,
@@ -50,6 +55,7 @@ nestable_theme <- function(
     row_hover_bg  = row_hover_bg,
     parent_weight = parent_weight,
     toggle_color  = toggle_color,
-    indent_px     = as.integer(indent_px)
+    indent_px     = as.integer(indent_px),
+    zoom          = as.character(zoom)
   )
 }
