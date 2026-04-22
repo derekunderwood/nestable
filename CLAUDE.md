@@ -29,7 +29,7 @@ The script is organized into four logical sections:
 ## Key Constraints
 
 - Base R only; `htmltools` is acceptable if it meaningfully simplifies HTML assembly — no other packages.
-- No hardcoded rollup values; all aggregation is computed from leaf data.
+- Rollup values are computed bottom-up from leaf data by default. Parent or group nodes may supply optional hardcoded values (via `.values` in `node()` or `node_values` in `df_to_tree()`) that override the computed rollup for specific columns; any column not explicitly supplied still falls back to aggregation from children.
 - Inline JavaScript must be minimal (a single toggle function is sufficient).
 - Deeper nesting (3+ levels) must work without code changes.
 
