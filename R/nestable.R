@@ -113,8 +113,13 @@ render_rows <- function(nodes, cols, depth, parent_id, indent_px, name_col_width
 #'     \item A list of [col_def()] objects for full control over formatting,
 #'           colours, and rollup behaviour.
 #'   }
+#' @param name_col Character. The node label key — the `name_col` used when
+#'   building the tree with [df_to_tree()], or `"name"` when constructing nodes
+#'   manually. Used to auto-derive `name_header` via title-casing when
+#'   `name_header` is `NULL`. Default `"name"`.
 #' @param name_header Character. Header label for the first (name/label) column.
-#'   Default `"Name"`.
+#'   `NULL` (default) derives the label from `name_col` (e.g. `"security_name"`
+#'   → `"Security Name"`).
 #' @param name_col_width CSS width string (e.g. `"200px"`, `"30%"`) applied to
 #'   the name column header and every name cell. `NULL` (default) leaves the
 #'   width unset, allowing the browser to size the column automatically.
@@ -130,10 +135,12 @@ render_rows <- function(nodes, cols, depth, parent_id, indent_px, name_col_width
 nestable <- function(data_root,
                      columns,
                      theme          = nestable_theme(),
-                     name_header    = "Name",
+                     name_col       = "name",
+                     name_header    = NULL,
                      name_col_width = NULL,
                      uid            = new_widget_uid()) {
 
+  if (is.null(name_header)) name_header <- pretty_header(name_col)
   columns <- normalise_columns(columns)
   tree <- build_tree(data_root, columns, prefix = paste0(uid, "-"))
 

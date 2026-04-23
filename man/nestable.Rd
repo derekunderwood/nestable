@@ -8,7 +8,8 @@ nestable(
   data_root,
   columns,
   theme = nestable_theme(),
-  name_header = "Name",
+  name_col = "name",
+  name_header = NULL,
   name_col_width = NULL,
   uid = new_widget_uid()
 )
@@ -31,8 +32,14 @@ colours, and rollup behaviour.
 
 \item{theme}{A theme list from \code{\link[=nestable_theme]{nestable_theme()}}.}
 
+\item{name_col}{Character. The node label key — the \code{name_col} used when
+building the tree with \code{\link[=df_to_tree]{df_to_tree()}}, or \code{"name"} when constructing nodes
+manually. Used to auto-derive \code{name_header} via title-casing when
+\code{name_header} is \code{NULL}. Default \code{"name"}.}
+
 \item{name_header}{Character. Header label for the first (name/label) column.
-Default \code{"Name"}.}
+\code{NULL} (default) derives the label from \code{name_col} (e.g. \code{"security_name"}
+→ \code{"Security Name"}).}
 
 \item{name_col_width}{CSS width string (e.g. \code{"200px"}, \code{"30\%"}) applied to
 the name column header and every name cell. \code{NULL} (default) leaves the

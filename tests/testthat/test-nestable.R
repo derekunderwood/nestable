@@ -44,9 +44,25 @@ test_that("nestable() accepts named character vector for headers", {
   expect_match(html, "X Value")
 })
 
-test_that("nestable() custom name_header appears in output", {
+test_that("nestable() default name_col derives 'Name' header", {
   roots <- list(node("r", node("a", .values = list(v = 1))))
-  result <- nestable(roots, c("v"), name_header = "Asset", uid = "test05")
+  result <- nestable(roots, c("v"), uid = "test05")
+  html <- as.character(result)
+  expect_match(html, ">Name<")
+})
+
+test_that("nestable() name_col derives title-cased header", {
+  roots <- list(node("r", node("a", .values = list(v = 1))))
+  result <- nestable(roots, c("v"), name_col = "security_name", uid = "test06")
+  html <- as.character(result)
+  expect_match(html, "Security Name")
+})
+
+test_that("nestable() explicit name_header overrides name_col derivation", {
+  roots <- list(node("r", node("a", .values = list(v = 1))))
+  result <- nestable(roots, c("v"), name_col = "security_name",
+                     name_header = "Asset", uid = "test07")
   html <- as.character(result)
   expect_match(html, "Asset")
+  expect_false(grepl("Security Name", html))
 })
