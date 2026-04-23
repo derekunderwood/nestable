@@ -34,7 +34,7 @@ nestable_dependency <- function() {
 }
 
 # Internal: walk tree and return a list of htmltools tr tags.
-render_rows <- function(nodes, cols, depth, parent_id, indent_px) {
+render_rows <- function(nodes, cols, depth, parent_id, indent_px, name_col_width) {
   rows <- list()
 
   for (nd in nodes) {
@@ -52,8 +52,12 @@ render_rows <- function(nodes, cols, depth, parent_id, indent_px) {
       tags$span(class = "ntbl-toggle-spacer")
     }
 
+    name_td_style <- paste0("padding-left:", padding_left, "px",
+                            if (!is.null(name_col_width))
+                              paste0(";width:", name_col_width,
+                                     ";white-space:nowrap") else "")
     name_td <- tags$td(
-      style = paste0("padding-left:", padding_left, "px"),
+      style = name_td_style,
       toggle,
       if (has_children) tags$strong(nd$name) else nd$name
     )
@@ -84,9 +88,10 @@ render_rows <- function(nodes, cols, depth, parent_id, indent_px) {
 
     if (has_children) {
       rows <- c(rows, render_rows(nd$children, cols,
-                                  depth     = depth + 1L,
-                                  parent_id = nd$id,
-                                  indent_px = indent_px))
+                                  depth          = depth + 1L,
+                                  parent_id      = nd$id,
+                                  indent_px      = indent_px,
+                                  name_col_width = name_col_width))
     }
   }
 
@@ -110,6 +115,9 @@ render_rows <- function(nodes, cols, depth, parent_id, indent_px) {
 #'   }
 #' @param name_header Character. Header label for the first (name/label) column.
 #'   Default `"Name"`.
+#' @param name_col_width CSS width string (e.g. `"200px"`, `"30%"`) applied to
+#'   the name column header and every name cell. `NULL` (default) leaves the
+#'   width unset, allowing the browser to size the column automatically.
 #' @param theme A theme list from [nestable_theme()].
 #' @param uid Character. Widget UID prefix for HTML element `id` attributes.
 #'   Defaults to a random string so multiple tables on one page never clash.
@@ -120,9 +128,10 @@ render_rows <- function(nodes, cols, depth, parent_id, indent_px) {
 #' @export
 nestable <- function(data_root,
                      columns,
-                     theme       = nestable_theme(),
-                     name_header = "Name",
-                     uid         = new_widget_uid()) {
+                     theme          = nestable_theme(),
+                     name_header    = "Name",
+                     name_col_width = NULL,
+                     uid            = new_widget_uid()) {
 
   columns <- normalise_columns(columns)
   tree <- build_tree(data_root, columns, prefix = paste0(uid, "-"))
@@ -146,6 +155,9 @@ nestable <- function(data_root,
     sep = "; "
   ), zoom_css)
 
+  name_th_style <- if (!is.null(name_col_width))
+    paste0("width:", name_col_width, ";white-space:nowrap") else NULL
+
   header_cells <- lapply(columns, function(col) {
     hdr_style <- if (!is.null(col$width))
       paste0("width:", col$width, ";white-space:nowrap") else NULL
@@ -153,9 +165,10 @@ nestable <- function(data_root,
   })
 
   body_rows <- render_rows(tree, columns,
-                           depth     = 0L,
-                           parent_id = NULL,
-                           indent_px = theme$indent_px)
+                           depth          = 0L,
+                           parent_id      = NULL,
+                           indent_px      = theme$indent_px,
+                           name_col_width = name_col_width)
 
   widget <- div(
     id    = uid,
@@ -164,7 +177,7 @@ nestable <- function(data_root,
     if (nchar(theme$title) > 0) tags$h2(class = "ntbl-title", theme$title),
     tags$table(
       class = "ntbl",
-      tags$thead(tags$tr(tags$th(name_header), header_cells)),
+      tags$thead(tags$tr(tags$th(style = name_th_style, name_header), header_cells)),
       tags$tbody(body_rows)
     )
   )
