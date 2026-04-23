@@ -8,7 +8,7 @@ Collapsible, expandable HTML tables from hierarchical R data. Works in the RStud
 # development version
 devtools::install_local(".")   # from the repo root
 # or
-devtools::install_github("dereku/nestable")
+devtools::install_github("derekunderwood/nestable")
 ```
 
 ## Quick start
