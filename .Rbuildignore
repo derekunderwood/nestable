@@ -1,0 +1,5 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^nestable\.R$
+^CLAUDE\.md$
+^README\.md$

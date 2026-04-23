@@ -11,8 +11,9 @@ Description: Creates collapsible, expandable HTML tables from hierarchical
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.3
 Imports:
     htmltools (>= 0.5.0)
 Suggests:
-    shiny (>= 1.7.0)
+    shiny (>= 1.7.0),
+    testthat (>= 3.0.0)
