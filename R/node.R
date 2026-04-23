@@ -21,6 +21,14 @@ node <- function(name, ..., .values = list()) {
 #' @return A list of [node()] objects.
 #' @export
 rows_to_nodes <- function(df, name_col, value_cols) {
+  if (!is.character(name_col) || length(name_col) != 1L)
+    stop("`name_col` must be a single column name string.", call. = FALSE)
+  if (!name_col %in% names(df))
+    stop("`name_col` \"", name_col, "\" not found in `df`.", call. = FALSE)
+  missing_vals <- setdiff(value_cols, names(df))
+  if (length(missing_vals))
+    stop("Columns not found in `df`: ",
+         paste(missing_vals, collapse = ", "), call. = FALSE)
   lapply(seq_len(nrow(df)), function(i) {
     row    <- df[i, , drop = FALSE]
     values <- as.list(row[, value_cols, drop = FALSE])
@@ -59,6 +67,20 @@ df_to_tree <- function(df, name_col, value_cols,
                        group_col   = NULL,
                        total       = NULL,
                        node_values = list()) {
+  if (!is.character(name_col) || length(name_col) != 1L)
+    stop("`name_col` must be a single column name string.", call. = FALSE)
+  if (!name_col %in% names(df))
+    stop("`name_col` \"", name_col, "\" not found in `df`.", call. = FALSE)
+  missing_vals <- setdiff(value_cols, names(df))
+  if (length(missing_vals))
+    stop("Columns not found in `df`: ",
+         paste(missing_vals, collapse = ", "), call. = FALSE)
+  if (!is.null(group_col)) {
+    missing_grp <- setdiff(group_col, names(df))
+    if (length(missing_grp))
+      stop("group_col columns not found in `df`: ",
+           paste(missing_grp, collapse = ", "), call. = FALSE)
+  }
   result <- if (is.null(group_col) || length(group_col) == 0) {
     rows_to_nodes(df, name_col, value_cols)
   } else {
