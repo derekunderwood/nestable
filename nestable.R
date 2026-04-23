@@ -77,14 +77,15 @@ columns <- list(
 th <- nestable_theme(
   title      = "Magnificent 7",
   header_bg  = "#37474f",
-  indent_px  = 20L
+  indent_px  = 20L,
+  zoom = 1.25
 )
 
 # ---------------------------------------------------------------------------
 # 4. Render — displays in RStudio Viewer or browser
 # ---------------------------------------------------------------------------
 
-nestable(data_root, columns, th)
+nestable(data_root, columns, th, name_header = "TEST")
 
 # ---------------------------------------------------------------------------
 # Example 2: iris — general (non-financial) table
