@@ -125,6 +125,7 @@ render_rows <- function(nodes, cols, depth, parent_id, indent_px, name_col_width
 #' @return An [htmltools::browsable()] `tagList`. Renders inline in R Markdown,
 #'   Quarto, and the RStudio Viewer; use inside [shiny::renderUI()] or
 #'   [renderNestable()] in Shiny apps.
+#' @importFrom htmltools tags div HTML browsable tagList htmlDependency
 #' @export
 nestable <- function(data_root,
                      columns,
