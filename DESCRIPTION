@@ -1,13 +1,13 @@
 Package: nestable
 Type: Package
-Title: Collapsible HTML Tables from Hierarchical Data
+Title: Collapsible 'HTML' Tables from Hierarchical Data
 Version: 0.1.0
 Authors@R: person("Derek", "Underwood", email = "dereku@gmail.com",
     role = c("aut", "cre"))
-Description: Creates collapsible, expandable HTML tables from hierarchical
+Description: Creates collapsible, expandable 'HTML' tables from hierarchical
     data. Supports data frame input with multi-level grouping, custom column
     formatters, bottom-up rollup aggregation, and CSS-variable-based theming.
-    Works in Shiny applications, R Markdown, Quarto, and the RStudio Viewer.
+    Works in 'Shiny' applications, R Markdown, 'Quarto', and the 'RStudio' Viewer.
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
