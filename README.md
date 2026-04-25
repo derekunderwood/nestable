@@ -1,6 +1,6 @@
 # nestable
 
-Collapsible, expandable HTML tables from hierarchical R data. Works in the RStudio Viewer, R Markdown, Quarto, and Shiny — no JavaScript framework required.
+Collapsible, expandable HTML tables from hierarchical R data. Works in the RStudio Viewer, R Markdown, Quarto, and Shiny with no JavaScript framework required.
 
 ## Installation
 
@@ -58,7 +58,7 @@ df_to_tree(df,
 )
 ```
 
-**Optional hardcoded values** — parent and group nodes compute their column values by rolling up from children by default. You can override specific columns with pre-computed figures (e.g. time-weighted returns that differ from a simple weighted average) using `node_values`. Any column not listed still rolls up normally:
+**Optional hardcoded values** -- parent and group nodes compute their column values by rolling up from children by default. You can override specific columns with pre-computed figures (e.g. time-weighted returns that differ from a simple weighted average) using `node_values`. Any column not listed still rolls up normally:
 
 ```r
 df_to_tree(df,
@@ -159,9 +159,9 @@ server <- function(input, output) {
 shinyApp(ui, server)
 ```
 
-## Full example — Magnificent 7
+## Full example: Magnificent 7
 
-See `nestable.R` in the repo root for a complete financial-portfolio example with:
+See `inst/examples/nestable.R` for a complete financial-portfolio example with:
 
 - Three nesting levels (sector → subsector → stock)
 - Currency and percentage formatting
