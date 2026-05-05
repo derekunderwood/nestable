@@ -1,4 +1,5 @@
 # nestable
+[![R-CMD-check](https://github.com/derekunderwood/nestable/actions/workflows/r.yml/badge.svg)](https://github.com/derekunderwood/nestable/actions/workflows/r.yml)
 
 Collapsible, expandable HTML tables from hierarchical R data. Works in the RStudio Viewer, R Markdown, Quarto, and Shiny with no JavaScript framework required.
 
