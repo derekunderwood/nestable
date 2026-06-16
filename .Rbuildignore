@@ -4,4 +4,5 @@
 ^CLAUDE\.md$
 ^README\.md$
 ^\.claude$
+^\.github$
 ^LICENSE\.md$
